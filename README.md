@@ -191,4 +191,137 @@ VPCS> ip dhcp -r
 DORA IP 192.168.1.103/28 GW 192.168.1.97
 ```
 
+# DHCPv6
+![alt-dtp](https://github.com/vk1391/OTUS_NE_DHCP/blob/main/dhcp1.jpg "Схема к домашнему заданию №3")
 
+**Устройство** | **Интерфейс** | **ipv6 address** | тип
+ --- | --- | --- | --- 
+| R1 | e0/0 | 2001:db8:acad:2::1 /64 | global 
+| R1 | e0/0 | fe80::1 | link-local 
+| R1 | e0/1 | 2001:db8:acad:1::1 /64 | global
+| R1 | e0/1 | fe80::1 | link-local
+| R2 | e0/0 | 2001:db8:acad:2::2 /64 | global
+| R2 | e0/0 |  fe80::2 | link-local
+| R2 | e0/1 | 2001:db8:acad:3::1 /64 | global
+| R2 | e0/0 |  fe80::1 | link-local
+| VPC1 | NIC | SLAAC 
+| VPC2 | NIC | SLAAC 
+
+- Конфигурация R1:
+
+```
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+
+interface Ethernet0/0
+ no ip address
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:ACAD:2::1/64
+!
+interface Ethernet0/1
+ no ip address
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:ACAD:1::1/64
+!
+interface Ethernet0/2
+ no ip address
+ shutdown
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+ipv6 route ::/0 2001:DB8:ACAD:2::2
+!
+!         
+!
+control-plane
+```
+
+- конфигурация R2:
+```
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+interface Ethernet0/0
+ no ip address
+ ipv6 address FE80::2 link-local
+ ipv6 address 2001:DB8:ACAD:2::2/64
+!
+interface Ethernet0/1
+ no ip address
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:ACAD:3::1/64
+!
+interface Ethernet0/2
+ no ip address
+ shutdown
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+ipv6 route ::/0 2001:DB8:ACAD:2::1
+!
+!         
+!
+control-plane
+
+```
+
+результат VPC1:
+```
+VPCS> show ipv6
+
+NAME              : VPCS[1]
+LINK-LOCAL SCOPE  : fe80::250:79ff:fe66:6805/64
+GLOBAL SCOPE      : 2001:db8:acad:1:2050:79ff:fe66:6805/64
+DNS               : 
+ROUTER LINK-LAYER : aa:bb:cc:00:10:10
+MAC               : 00:50:79:66:68:05
+LPORT             : 20000
+RHOST:PORT        : 127.0.0.1:30000
+MTU:              : 1500
+
+VPCS> 
+VPCS> ping 2001:db8:acad:3:2050:79ff:fe66:6806/64
+
+2001:db8:acad:3:2050:79ff:fe66:6806 icmp6_seq=1 ttl=60 time=16.431 ms
+2001:db8:acad:3:2050:79ff:fe66:6806 icmp6_seq=2 ttl=60 time=1.724 ms
+2001:db8:acad:3:2050:79ff:fe66:6806 icmp6_seq=3 ttl=60 time=32.422 ms
+2001:db8:acad:3:2050:79ff:fe66:6806 icmp6_seq=4 ttl=60 time=3.007 ms
+2001:db8:acad:3:2050:79ff:fe66:6806 icmp6_seq=5 ttl=60 time=6.217 ms
+```
+-  результат VPC2:
+```
+NAME              : VPCS[1]
+LINK-LOCAL SCOPE  : fe80::250:79ff:fe66:6806/64
+GLOBAL SCOPE      : 2001:db8:acad:3:2050:79ff:fe66:6806/64
+DNS               : 
+ROUTER LINK-LAYER : aa:bb:cc:00:20:10
+MAC               : 00:50:79:66:68:06
+LPORT             : 20000
+RHOST:PORT        : 127.0.0.1:30000
+MTU:              : 1500
+
+VPCS> ping 2001:db8:acad:1:2050:79ff:fe66:6805/64
+
+2001:db8:acad:1:2050:79ff:fe66:6805 icmp6_seq=1 ttl=60 time=20.539 ms
+2001:db8:acad:1:2050:79ff:fe66:6805 icmp6_seq=2 ttl=60 time=4.029 ms
+2001:db8:acad:1:2050:79ff:fe66:6805 icmp6_seq=3 ttl=60 time=2.820 ms
+2001:db8:acad:1:2050:79ff:fe66:6805 icmp6_seq=4 ttl=60 time=3.798 ms
+2001:db8:acad:1:2050:79ff:fe66:6805 icmp6_seq=5 ttl=60 time=2.861 ms
+```
